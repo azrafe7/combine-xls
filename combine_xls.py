@@ -27,22 +27,25 @@ def combine_excel_files(file_a, file_b, column_a, column_b, output_file, case_se
 
     # Perform merge based on comparison type
     if like_comparison:
-        merged_df = pd.merge(df_a, df_b, on=col_a, how='inner')
+        merged_df = pd.merge(df_a, df_b, on=col_a, how='inner', suffixes=('', '_y'))
     else:
-        merged_df = pd.merge(df_a, df_b, on=col_a, how='inner')
+        merged_df = pd.merge(df_a, df_b, on=col_a, how='inner', suffixes=('', '_y'))
 
     # Ensure columns with the same header are included only once
     columns_to_keep = []
     seen_columns = set()
     for col in df_a.columns:
-        if col not in seen_columns:
+        if col in merged_df.columns and col not in seen_columns:
             columns_to_keep.append(col)
             seen_columns.add(col)
     
     for col in df_b.columns:
-        if col not in seen_columns:
+        if col in merged_df.columns and col not in seen_columns:
             columns_to_keep.append(col)
             seen_columns.add(col)
+
+    # Remove any '_y' suffixed columns if their original column exists
+    columns_to_keep = [col for col in columns_to_keep if not (col.endswith('_y') and col[:-2] in columns_to_keep)]
 
     merged_df = merged_df[columns_to_keep]
 
@@ -87,6 +90,7 @@ def combine_excel_files(file_a, file_b, column_a, column_b, output_file, case_se
     print(f"Number of rows in file A: {len(df_a)}")
     print(f"Number of rows in file B: {len(df_b)}")
     print(f"Number of rows in merged file: {len(merged_df)}")
+    print(f"Columns in merged file: {', '.join(merged_df.columns)}")
 
 def main():
     parser = argparse.ArgumentParser(description="Combine two Excel files based on a specified column.")
