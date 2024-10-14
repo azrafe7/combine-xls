@@ -22,22 +22,29 @@ def combine_excel_files(file_a, file_b, column_a, column_b, output_file, case_se
         df_a[col_a] = df_a[col_a].astype(str).str.lower()
         df_b[col_b] = df_b[col_b].astype(str).str.lower()
 
+    # Rename column_b to match column_a for merging
+    df_b = df_b.rename(columns={col_b: col_a})
+
     # Perform merge based on comparison type
     if like_comparison:
-        merged_df = pd.merge(df_a, df_b, left_on=df_a[col_a].str.contains,
-                             right_on=df_b[col_b], how='inner', suffixes=('', '_B'))
+        merged_df = pd.merge(df_a, df_b, on=col_a, how='inner')
     else:
-        merged_df = pd.merge(df_a, df_b, left_on=col_a, right_on=col_b, how='inner', suffixes=('', '_B'))
+        merged_df = pd.merge(df_a, df_b, on=col_a, how='inner')
 
-    # Remove duplicate columns and use header from file A
-    columns_to_drop = []
-    for col in merged_df.columns:
-        if col.endswith('_B') and col[:-2] in merged_df.columns:
-            if merged_df[col].equals(merged_df[col[:-2]]):
-                columns_to_drop.append(col)
-            else:
-                merged_df = merged_df.rename(columns={col: f"{col[:-2]}_B"})
-    merged_df = merged_df.drop(columns=columns_to_drop)
+    # Ensure columns with the same header are included only once
+    columns_to_keep = []
+    seen_columns = set()
+    for col in df_a.columns:
+        if col not in seen_columns:
+            columns_to_keep.append(col)
+            seen_columns.add(col)
+    
+    for col in df_b.columns:
+        if col not in seen_columns:
+            columns_to_keep.append(col)
+            seen_columns.add(col)
+
+    merged_df = merged_df[columns_to_keep]
 
     # Save the merged dataframe to a new Excel file
     merged_df.to_excel(output_file, index=False)
@@ -60,7 +67,7 @@ def combine_excel_files(file_a, file_b, column_a, column_b, output_file, case_se
         # Apply fill colors
         for col in range(1, ws.max_column + 1):
             col_name = ws.cell(row=1, column=col).value
-            if col_name == col_a or col_name == col_b:
+            if col_name == col_a:
                 for row in range(2, ws.max_row + 1):
                     ws.cell(row=row, column=col).fill = fill_match
             elif col_name in cols_a and col_name in cols_b:
