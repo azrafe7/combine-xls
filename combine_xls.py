@@ -2,6 +2,7 @@ import argparse
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
+from openpyxl.utils import get_column_letter
 
 def get_column(df, column_spec):
     if column_spec.isdigit():
@@ -22,25 +23,36 @@ def combine_excel_files(file_a, file_b, column_a, column_b, output_file, case_se
         df_a[col_a] = df_a[col_a].astype(str).str.lower()
         df_b[col_b] = df_b[col_b].astype(str).str.lower()
 
-    # Rename column_b to match column_a for merging
-    df_b = df_b.rename(columns={col_b: col_a})
+    # Rename column_b to avoid conflicts
+    df_b = df_b.rename(columns={col_b: f"{col_b}_matched"})
 
     # Perform merge based on comparison type
     if like_comparison:
-        merged_df = pd.merge(df_a, df_b, on=col_a, how='inner', suffixes=('', '_y'))
+        merged_df = pd.merge(df_a, df_b, left_on=col_a, right_on=f"{col_b}_matched", how='inner', suffixes=('', '_y'))
     else:
-        merged_df = pd.merge(df_a, df_b, on=col_a, how='inner', suffixes=('', '_y'))
+        merged_df = pd.merge(df_a, df_b, left_on=col_a, right_on=f"{col_b}_matched", how='inner', suffixes=('', '_y'))
 
     # Ensure columns with the same header are included only once
     columns_to_keep = []
     seen_columns = set()
+    
+    # Add col_a first
+    columns_to_keep.append(col_a)
+    seen_columns.add(col_a)
+    
+    # Add the matched column from file B right after col_a
+    columns_to_keep.append(f"{col_b}_matched")
+    seen_columns.add(f"{col_b}_matched")
+    
+    # Add remaining columns from file A
     for col in df_a.columns:
         if col in merged_df.columns and col not in seen_columns:
             columns_to_keep.append(col)
             seen_columns.add(col)
     
+    # Add remaining columns from file B
     for col in df_b.columns:
-        if col in merged_df.columns and col not in seen_columns:
+        if col in merged_df.columns and col not in seen_columns and col != f"{col_b}_matched":
             columns_to_keep.append(col)
             seen_columns.add(col)
 
@@ -58,7 +70,8 @@ def combine_excel_files(file_a, file_b, column_a, column_b, output_file, case_se
         ws = wb.active
 
         # Define fill colors
-        fill_match = PatternFill(start_color="ADD8E6", end_color="ADD8E6", fill_type="solid")  # Light Blue
+        fill_match_a = PatternFill(start_color="ADD8E6", end_color="ADD8E6", fill_type="solid")  # Light Blue
+        fill_match_b = PatternFill(start_color="EE82EE", end_color="EE82EE", fill_type="solid")  # Violet
         fill_both = PatternFill(start_color="90EE90", end_color="90EE90", fill_type="solid")  # Green
         fill_a = PatternFill(start_color="E0FFE0", end_color="E0FFE0", fill_type="solid")  # Light Green
         fill_b = PatternFill(start_color="FFFACD", end_color="FFFACD", fill_type="solid")  # Light Yellow
@@ -72,7 +85,10 @@ def combine_excel_files(file_a, file_b, column_a, column_b, output_file, case_se
             col_name = ws.cell(row=1, column=col).value
             if col_name == col_a:
                 for row in range(2, ws.max_row + 1):
-                    ws.cell(row=row, column=col).fill = fill_match
+                    ws.cell(row=row, column=col).fill = fill_match_a
+            elif col_name == f"{col_b}_matched":
+                for row in range(2, ws.max_row + 1):
+                    ws.cell(row=row, column=col).fill = fill_match_b
             elif col_name in cols_a and col_name in cols_b:
                 for row in range(2, ws.max_row + 1):
                     ws.cell(row=row, column=col).fill = fill_both
