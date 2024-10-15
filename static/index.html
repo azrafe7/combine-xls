@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel File Combiner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        label {
+            font-weight: bold;
+        }
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Excel File Combiner</h1>
+    <form action="/combine" method="post" enctype="multipart/form-data">
+        <label for="file_a">File A:</label>
+        <input type="file" name="file_a" id="file_a" required>
+
+        <label for="file_b">File B:</label>
+        <input type="file" name="file_b" id="file_b" required>
+
+        <label for="column_a">Column A:</label>
+        <input type="text" name="column_a" id="column_a" required>
+
+        <label for="column_b">Column B:</label>
+        <input type="text" name="column_b" id="column_b" required>
+
+        <label>
+            <input type="checkbox" name="case_sensitive" value="true" checked>
+            Case Sensitive
+        </label>
+
+        <label>
+            <input type="checkbox" name="like_comparison" value="true">
+            Use 'LIKE' Comparison
+        </label>
+
+        <input type="submit" value="Combine Files">
+    </form>
+</body>
+</html>
