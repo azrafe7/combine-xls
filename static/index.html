@@ -29,6 +29,11 @@
         input[type="submit"]:hover {
             background-color: #45a049;
         }
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -42,9 +47,11 @@
 
         <label for="column_a">Column A:</label>
         <input type="text" name="column_a" id="column_a" required>
+        <div class="help-text">(column name or cell letter)</div>
 
         <label for="column_b">Column B:</label>
         <input type="text" name="column_b" id="column_b" required>
+        <div class="help-text">(column name or cell letter)</div>
 
         <label>
             <input type="checkbox" name="case_sensitive" value="true" checked>
@@ -54,6 +61,11 @@
         <label>
             <input type="checkbox" name="like_comparison" value="true">
             Use 'LIKE' Comparison
+        </label>
+
+        <label>
+            <input type="checkbox" name="debug" value="true">
+            Debug Mode (Highlight cells based on their source file)
         </label>
 
         <input type="submit" value="Combine Files">

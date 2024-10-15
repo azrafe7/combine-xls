@@ -25,7 +25,8 @@ async def combine_files(
     column_a: str = Form(...),
     column_b: str = Form(...),
     case_sensitive: bool = Form(True),
-    like_comparison: bool = Form(False)
+    like_comparison: bool = Form(False),
+    debug: bool = Form(False)
 ):
     # Create temporary files
     with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_a, \
@@ -43,7 +44,7 @@ async def combine_files(
         # Combine Excel files using the function from combine_xls.py
         combine_excel_files(
             temp_a.name, temp_b.name, column_a, column_b, 
-            temp_output.name, case_sensitive, like_comparison
+            temp_output.name, case_sensitive, like_comparison, debug
         )
 
         # Return the merged file
