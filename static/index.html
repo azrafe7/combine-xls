@@ -38,20 +38,18 @@
 </head>
 <body>
     <h1>Excel File Combiner</h1>
-    <form action="/combine" method="post" enctype="multipart/form-data">
+    <form id="combineForm" action="/combine" method="post" enctype="multipart/form-data">
         <label for="file_a">File A:</label>
         <input type="file" name="file_a" id="file_a" required>
 
         <label for="file_b">File B:</label>
         <input type="file" name="file_b" id="file_b" required>
 
-        <label for="column_a">Column A:</label>
-        <input type="text" name="column_a" id="column_a" required>
-        <div class="help-text">(column name or cell letter)</div>
+        <label for="column_a">Column A (column name or column letter):</label>
+        <select name="column_a" id="column_a" required></select>
 
-        <label for="column_b">Column B:</label>
-        <input type="text" name="column_b" id="column_b" required>
-        <div class="help-text">(column name or cell letter)</div>
+        <label for="column_b">Column B (column name or column letter):</label>
+        <select name="column_b" id="column_b" required></select>
 
         <label>
             <input type="checkbox" name="case_sensitive" value="true" checked>
@@ -64,11 +62,51 @@
         </label>
 
         <label>
-            <input type="checkbox" name="debug" value="true">
+            <input type="checkbox" name="debug" value="true" checked>
             Debug Mode (Highlight cells based on their source file)
         </label>
 
         <input type="submit" value="Combine Files">
     </form>
+
+    <script>
+        function populateColumns(fileInput, columnSelect) {
+            const file = fileInput.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                fetch('/get_columns', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    columnSelect.innerHTML = '';
+                    data.columns.forEach(column => {
+                        const option = document.createElement('option');
+                        option.value = column;
+                        option.textContent = column;
+                        columnSelect.appendChild(option);
+                    });
+                    // Add column letters as options
+                    for (let i = 0; i < 26; i++) {
+                        const letter = String.fromCharCode(65 + i);
+                        const option = document.createElement('option');
+                        option.value = letter;
+                        option.textContent = letter;
+                        columnSelect.appendChild(option);
+                    }
+                });
+            }
+        }
+
+        document.getElementById('file_a').addEventListener('change', function() {
+            populateColumns(this, document.getElementById('column_a'));
+        });
+
+        document.getElementById('file_b').addEventListener('change', function() {
+            populateColumns(this, document.getElementById('column_b'));
+        });
+    </script>
 </body>
 </html>

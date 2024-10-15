@@ -1,11 +1,12 @@
 # main.py
 import os
 import tempfile
+import pandas as pd
 from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
-from combine_xls import combine_excel_files
+from combine_xls import combine_excel_files, get_column
 
 app = FastAPI()
 
@@ -18,6 +19,16 @@ async def read_root():
         content = f.read()
     return content
 
+@app.post("/get_columns")
+async def get_columns(file: UploadFile = File(...)):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_file:
+        temp_file.write(await file.read())
+        temp_file.close()
+        df = pd.read_excel(temp_file.name)
+        columns = df.columns.tolist()
+        os.unlink(temp_file.name)
+    return JSONResponse(content={"columns": columns})
+
 @app.post("/combine")
 async def combine_files(
     file_a: UploadFile = File(...),
@@ -26,7 +37,7 @@ async def combine_files(
     column_b: str = Form(...),
     case_sensitive: bool = Form(True),
     like_comparison: bool = Form(False),
-    debug: bool = Form(False)
+    debug: bool = Form(True)
 ):
     # Create temporary files
     with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_a, \
