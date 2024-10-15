@@ -52,17 +52,17 @@
         <select name="column_b" id="column_b" required></select>
 
         <label>
-            <input type="checkbox" name="case_sensitive" value="true" checked>
+            <input type="checkbox" name="case_sensitive" id="case_sensitive">
             Case Sensitive
         </label>
 
         <label>
-            <input type="checkbox" name="like_comparison" value="true">
+            <input type="checkbox" name="like_comparison" id="like_comparison">
             Use 'LIKE' Comparison
         </label>
 
         <label>
-            <input type="checkbox" name="debug" value="true" checked>
+            <input type="checkbox" name="debug" id="debug" checked>
             Debug Mode (Highlight cells based on their source file)
         </label>
 
@@ -106,6 +106,38 @@
 
         document.getElementById('file_b').addEventListener('change', function() {
             populateColumns(this, document.getElementById('column_b'));
+        });
+
+        // Ensure checkbox values are correctly sent
+        document.getElementById('combineForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            // Explicitly set boolean values for checkboxes
+            formData.set('case_sensitive', document.getElementById('case_sensitive').checked);
+            formData.set('like_comparison', document.getElementById('like_comparison').checked);
+            formData.set('debug', document.getElementById('debug').checked);
+
+            fetch('/combine', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    return response.blob();
+                }
+                throw new Error('Network response was not ok.');
+            }).then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'merged.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            }).catch(error => {
+                console.error('Error:', error);
+            });
         });
     </script>
 </body>

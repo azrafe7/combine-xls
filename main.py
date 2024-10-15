@@ -35,9 +35,9 @@ async def combine_files(
     file_b: UploadFile = File(...),
     column_a: str = Form(...),
     column_b: str = Form(...),
-    case_sensitive: bool = Form(True),
+    case_sensitive: bool = Form(False),
     like_comparison: bool = Form(False),
-    debug: bool = Form(True)
+    debug: bool = Form(False)
 ):
     # Create temporary files
     with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_a, \
