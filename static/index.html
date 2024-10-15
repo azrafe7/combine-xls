@@ -34,22 +34,39 @@
             color: #666;
             margin-top: 2px;
         }
+        .file-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .remove-file {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        #add-file {
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Excel File Combiner</h1>
     <form id="combineForm" action="/combine" method="post" enctype="multipart/form-data">
-        <label for="file_a">File A:</label>
-        <input type="file" name="file_a" id="file_a" required>
-
-        <label for="file_b">File B:</label>
-        <input type="file" name="file_b" id="file_b" required>
-
-        <label for="column_a">Column A (column name or column letter):</label>
-        <select name="column_a" id="column_a" required></select>
-
-        <label for="column_b">Column B (column name or column letter):</label>
-        <select name="column_b" id="column_b" required></select>
+        <div id="file-inputs">
+            <div class="file-input-group">
+                <input type="file" name="files" required>
+                <select name="columns" required></select>
+                <button type="button" class="remove-file" style="display:none;">Remove</button>
+            </div>
+        </div>
+        <button type="button" id="add-file">Add File</button>
 
         <label>
             <input type="checkbox" name="case_sensitive" id="case_sensitive">
@@ -100,15 +117,47 @@
             }
         }
 
-        document.getElementById('file_a').addEventListener('change', function() {
-            populateColumns(this, document.getElementById('column_a'));
+        function addFileInput() {
+            const fileInputs = document.getElementById('file-inputs');
+            const newGroup = document.createElement('div');
+            newGroup.className = 'file-input-group';
+            newGroup.innerHTML = `
+                <input type="file" name="files" required>
+                <select name="columns" required></select>
+                <button type="button" class="remove-file">Remove</button>
+            `;
+            fileInputs.appendChild(newGroup);
+
+            const fileInput = newGroup.querySelector('input[type="file"]');
+            const columnSelect = newGroup.querySelector('select');
+            fileInput.addEventListener('change', () => populateColumns(fileInput, columnSelect));
+
+            const removeButton = newGroup.querySelector('.remove-file');
+            removeButton.addEventListener('click', () => {
+                fileInputs.removeChild(newGroup);
+                updateRemoveButtons();
+            });
+
+            updateRemoveButtons();
+        }
+
+        function updateRemoveButtons() {
+            const removeButtons = document.querySelectorAll('.remove-file');
+            removeButtons.forEach((button, index) => {
+                if (index === 0 && removeButtons.length === 1) {
+                    button.style.display = 'none';
+                } else {
+                    button.style.display = 'inline-block';
+                }
+            });
+        }
+
+        document.getElementById('add-file').addEventListener('click', addFileInput);
+
+        document.querySelector('.file-input-group input[type="file"]').addEventListener('change', function() {
+            populateColumns(this, this.parentNode.querySelector('select'));
         });
 
-        document.getElementById('file_b').addEventListener('change', function() {
-            populateColumns(this, document.getElementById('column_b'));
-        });
-
-        // Ensure checkbox values are correctly sent
         document.getElementById('combineForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);

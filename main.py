@@ -6,6 +6,7 @@ from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
+from typing import List
 from combine_xls import combine_excel_files, get_column
 
 app = FastAPI()
@@ -31,32 +32,55 @@ async def get_columns(file: UploadFile = File(...)):
 
 @app.post("/combine")
 async def combine_files(
-    file_a: UploadFile = File(...),
-    file_b: UploadFile = File(...),
-    column_a: str = Form(...),
-    column_b: str = Form(...),
+    files: List[UploadFile] = File(...),
+    columns: List[str] = Form(...),
     case_sensitive: bool = Form(False),
     like_comparison: bool = Form(False),
     debug: bool = Form(False)
 ):
     # Create temporary files
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_a, \
-         tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_b, \
-         tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_output:
-        
-        # Save uploaded files
-        temp_a.write(await file_a.read())
-        temp_b.write(await file_b.read())
-        
-        # Close the files to ensure all data is written
-        temp_a.close()
-        temp_b.close()
+    temp_files = []
+    for file in files:
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx")
+        temp_file.write(await file.read())
+        temp_file.close()
+        temp_files.append(temp_file.name)
 
-        # Combine Excel files using the function from combine_xls.py
-        combine_excel_files(
-            temp_a.name, temp_b.name, column_a, column_b, 
-            temp_output.name, case_sensitive, like_comparison, debug
-        )
+    # Create output file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_output:
+        # Combine Excel files
+        combined_df = None
+        for i, (temp_file, column) in enumerate(zip(temp_files, columns)):
+            df = pd.read_excel(temp_file)
+            if combined_df is None:
+                combined_df = df
+            else:
+                combined_df = pd.merge(
+                    combined_df, df,
+                    left_on=columns[0], right_on=column,
+                    how='inner', suffixes=('', f'_{i}')
+                )
+
+        # Save the combined dataframe
+        combined_df.to_excel(temp_output.name, index=False)
+
+        # Apply debug highlighting if needed
+        if debug:
+            from openpyxl import load_workbook
+            from openpyxl.styles import PatternFill
+
+            wb = load_workbook(temp_output.name)
+            ws = wb.active
+
+            colors = ['ADD8E6', 'EE82EE', '90EE90', 'FFFACD', 'FFB6C1']  # Light Blue, Violet, Light Green, Light Yellow, Light Pink
+
+            for col in range(1, ws.max_column + 1):
+                color = colors[min((col - 1) // len(columns), len(colors) - 1)]
+                fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+                for row in range(2, ws.max_row + 1):
+                    ws.cell(row=row, column=col).fill = fill
+
+            wb.save(temp_output.name)
 
         # Return the merged file
         return FileResponse(
