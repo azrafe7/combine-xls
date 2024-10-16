@@ -109,7 +109,7 @@
                     for (let i = 0; i < 26; i++) {
                         const letter = String.fromCharCode(65 + i);
                         const option = document.createElement('option');
-                        option.value = letter;
+                        option.value = '' + i;
                         option.textContent = letter;
                         columnSelect.appendChild(option);
                     }

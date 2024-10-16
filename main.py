@@ -47,47 +47,52 @@ async def combine_files(
         temp_files.append(temp_file.name)
 
     # Create output file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_output:
-        # Combine Excel files
-        combined_df = None
-        for i, (temp_file, column) in enumerate(zip(temp_files, columns)):
-            df = pd.read_excel(temp_file)
-            if combined_df is None:
-                combined_df = df
-            else:
-                combined_df = pd.merge(
-                    combined_df, df,
-                    left_on=columns[0], right_on=column,
-                    how='inner', suffixes=('', f'_{i}')
-                )
+    temp_output = temp_files[0]
+    # Combine Excel files
+    #combined_df = None
+    for i, (temp_file, column) in enumerate(zip(temp_files, columns)):
+        if i == 0:
+            continue
+            
+        combine_excel_files(temp_output, temp_file, columns[0], column, output_file=temp_output, case_sensitive=case_sensitive, like_comparison=like_comparison, debug=debug)
+        
+        #df = pd.read_excel(temp_file)
+        #if combined_df is None:
+        #    combined_df = df
+        #else:
+        #    combined_df = pd.merge(
+        #        combined_df, df,
+        #        left_on=columns[0], right_on=column,
+        #        how='inner', suffixes=('', f'_{i}')
+        #    )
 
         # Save the combined dataframe
-        combined_df.to_excel(temp_output.name, index=False)
+        #combined_df.to_excel(temp_output.name, index=False)
 
         # Apply debug highlighting if needed
-        if debug:
-            from openpyxl import load_workbook
-            from openpyxl.styles import PatternFill
+        #if debug:
+        #    from openpyxl import load_workbook
+        #    from openpyxl.styles import PatternFill
+        #
+        #    wb = load_workbook(temp_output.name)
+        #    ws = wb.active
+        #
+        #    colors = ['ADD8E6', 'EE82EE', '90EE90', 'FFFACD', 'FFB6C1']  # Light Blue, Violet, Light Green, Light Yellow, Light Pink
+        #
+        #    for col in range(1, ws.max_column + 1):
+        #        color = colors[min((col - 1) // len(columns), len(colors) - 1)]
+        #        fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+        #        for row in range(2, ws.max_row + 1):
+        #            ws.cell(row=row, column=col).fill = fill
+        #
+        #    wb.save(temp_output.name)
 
-            wb = load_workbook(temp_output.name)
-            ws = wb.active
-
-            colors = ['ADD8E6', 'EE82EE', '90EE90', 'FFFACD', 'FFB6C1']  # Light Blue, Violet, Light Green, Light Yellow, Light Pink
-
-            for col in range(1, ws.max_column + 1):
-                color = colors[min((col - 1) // len(columns), len(colors) - 1)]
-                fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
-                for row in range(2, ws.max_row + 1):
-                    ws.cell(row=row, column=col).fill = fill
-
-            wb.save(temp_output.name)
-
-        # Return the merged file
-        return FileResponse(
-            temp_output.name,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            filename="merged.xlsx"
-        )
+    # Return the merged file
+    return FileResponse(
+        temp_output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename="merged.xlsx"
+    )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
