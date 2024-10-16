@@ -74,7 +74,7 @@ def combine_excel_files(file_a, file_b, column_a, column_b, output_file, case_se
     merged_df = merged_df[columns_to_keep]
 
     # Save the merged dataframe to a new Excel file
-    MAX_ROWS = 2
+    MAX_ROWS = 20
     merged_rows = len(merged_df)
     merged_df = merged_df.head(MAX_ROWS)
     merged_df.to_excel(output_file, index=False)
